@@ -94,9 +94,14 @@ impl Client {
             // set the transaction as disputed
             self.disputed_transactions.insert(transaction_id); 
 
-            // if the transaction is a deposit, move the funds to held
+            // if the transaction is a deposit, move the funds from available to held
             if let Some(&Transaction::Deposit(amount)) = self.history.get(&transaction_id) {
                 self.move_to_held(amount);
+            }
+            
+            // if the transaction is a deposit, add the funds to held
+            if let Some(&Transaction::Withdrawal(amount)) = self.history.get(&transaction_id) {
+                self.held += amount;
             }
         }
     }
@@ -111,9 +116,14 @@ impl Client {
             // set the transaction as undisputed
             self.disputed_transactions.remove(&transaction_id); 
 
-            // if the transaction is a deposit, move the funds back to available
+            // if the transaction is a deposit or withdrawal, move the funds back to available
+            // if it is a withdrawal, remove it from the history to avoid the risk of it being
+            // disputed twice
             if let Some(&Transaction::Deposit(amount)) = self.history.get(&transaction_id) {
                 self.move_to_held(-amount);
+            } else if let Some(&Transaction::Withdrawal(amount)) = self.history.get(&transaction_id) {
+                self.move_to_held(-amount);
+                self.history.remove(&transaction_id);
             }
         }
     }
@@ -150,7 +160,7 @@ impl Default for Client {
 impl std::fmt::Display for Client {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let total = self.available + self.held;
-        write!(f, "{:.4}, {:.4}, {:.4}, {}", self.available, self.held, total, self.locked)
+        write!(f, "{}, {}, {}, {}", self.available, self.held, total, self.locked)
     }
 }
 
@@ -281,7 +291,15 @@ impl ClientMap {
             // execute the transaction
             match transaction {
                 Transaction::Deposit(amount) => mut_ref_to_client.add_to_available(amount),
-                Transaction::Withdrawal(amount) => mut_ref_to_client.add_to_available(-amount),
+                Transaction::Withdrawal(amount) => {
+                    
+                    // if the client does not have enough available funds, do nothing
+                    if mut_ref_to_client.available < amount {
+                        return Ok(());
+                    }
+
+                    mut_ref_to_client.add_to_available(-amount);
+                },
                 Transaction::Dispute(id) => mut_ref_to_client.dispute(id), 
                 Transaction::Resolve(id) => mut_ref_to_client.resolve(id),
                 Transaction::Chargeback(id) => mut_ref_to_client.chargeback(id), 
@@ -528,6 +546,34 @@ mod tests {
         // check the client info
         if let Some(ref_to_client) = clients_map.get(&ClientId(1)) {
             assert_eq!("10000, 0, 10000, false".to_string(), 
+                       format!("{}", ref_to_client));
+        } else {
+            panic!("Client not found!");
+        }
+    }
+    
+    #[test]
+    fn withdrawal_2() {
+
+        // Create an empty ClientMap
+        let mut clients_map = ClientMap::default();
+
+        // Add a new client with an empty account and ID 1
+        clients_map.insert(ClientId(1), Client::new(0., 0., false)).unwrap();
+        
+        // Execute a transaction: deposit
+        clients_map.execute_transaction(TransactionId(1), ClientId(1), 
+                                        Transaction::Deposit(2_022.),
+                                        false).unwrap();
+        
+        // Try to withdraw more funds than the client has available
+        clients_map.execute_transaction(TransactionId(2), ClientId(1), 
+                                        Transaction::Withdrawal(10_000.),
+                                        false).unwrap();
+
+        // check the client info
+        if let Some(ref_to_client) = clients_map.get(&ClientId(1)) {
+            assert_eq!("2022, 0, 2022, false".to_string(), 
                        format!("{}", ref_to_client));
         } else {
             panic!("Client not found!");

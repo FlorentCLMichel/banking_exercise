@@ -47,7 +47,7 @@ will additionally save the errors to `log.txt`.
 
 ## High-level 
 
-The executable goes through the lines of the file passed as parameter, one by one. It tries to parse each line as a valid transaction and, if successful, updates the data accordingly. If the client ID does not exist, a new `Client` instance is created before performing the transaction, with `0.` available and held funds, an unlocked account, and an empty transaction history. After the last line has been analysed, the data is printed to `stdout`. 
+The executable goes through the lines of the file passed as parameter, one by one. It tries to parse each line as a valid transaction and, if successful, updates the data accordingly. If the client ID does not exist, a new `Client` instance is created before performing the transaction, with `0.` available and held funds, an unlocked account, and an empty transaction history. After the last line has been analysed, the data is printed to `stdout`.
 
 No transaction can be performed on a locked account.
 
