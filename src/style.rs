@@ -1,4 +1,4 @@
-#[cfg(feature = "atty")]
+#[cfg(all(feature = "atty", not(feature = "no_color")))]
 pub fn warning_style(message: String, is_term: bool) -> String {
     if is_term {
         format!("\x1b[31;1m{}\x1b[0m", message)

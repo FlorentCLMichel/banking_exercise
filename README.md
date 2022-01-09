@@ -4,16 +4,18 @@ This crate is a simple proof of concept for updating banking data in Rust, focus
 
 **This is a proof of concept only, not to use with real data. This crate does not implement any encryption nor other data protection mechanism, and is thus not suitable for dealing with private or otherwise secret data.** 
 
-# Requirements
+# How to use
+
+## Requirements
 
 Building this crate requires: 
 
 * A Rust 2021 compiler, and optionally `cargo`. Instructions for how to install the latest stable Rust toolchain can be found on the [rust-lang](https://www.rust-lang.org/) website.
-* The `itertools` version 0.10) and `atty` (version 0.2) crates (they may be downloaded by cargo at compile time).
+* The `itertools` (version 0.10) and `atty` (version 0.2) crates (they may be downloaded by cargo at compile time).
 
 The compiled executable can be run on any terminal or terminal emulator.
 
-# Build
+## Build
 
 The canonical way to build the executable is to run the command 
 
@@ -21,7 +23,16 @@ The canonical way to build the executable is to run the command
 
 from the crate main directory. 
 
-# Run
+The Makefile provides six additional commands (require `make`): 
+
+* `make run`: build the crate in offline mode, run the executable with on file `transactions.csv`, and save the output in `accounts.csv`
+* `make build`: build the crate in offline mode
+* `make build_no_color`: build the crate without color formatting for the warnings
+* `test`: build and run the unit tests
+* `clippy`: build the crate and run `clippy`
+* `clean`: delete the `target` folder and `Cargo.lock` file
+
+## Run
 
 The executable takes the name of a file with transactions as parameter (see below). For instance, to analyse transactions in the file `transactions.csv`, run 
 
