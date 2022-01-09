@@ -150,7 +150,7 @@ impl Default for Client {
 impl std::fmt::Display for Client {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let total = self.available + self.held;
-        write!(f, "{}, {}, {}, {}", self.available, self.held, total, self.locked)
+        write!(f, "{:.4}, {:.4}, {:.4}, {}", self.available, self.held, total, self.locked)
     }
 }
 

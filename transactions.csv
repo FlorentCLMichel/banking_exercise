@@ -11,3 +11,4 @@ resolve, 1, 1
 dispute, 2, 2
 chargeback, 2, 2
 not_a_valid_transaction, 2, 2
+deposit, 3, 5, 123456789.123456789

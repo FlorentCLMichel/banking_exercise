@@ -49,6 +49,8 @@ will additionally save the errors to `log.txt`.
 
 The executable goes through the lines of the file passed as parameter, one by one. It tries to parse each line as a valid transaction and, if successful, updates the data accordingly. If the client ID does not exist, a new `Client` instance is created before performing the transaction, with `0.` available and held funds, an unlocked account, and an empty transaction history. After the last line has been analysed, the data is printed to `stdout`. 
 
+No transaction can be performed on a locked account.
+
 Warnings are printed to `stderr` if a row can not be parsed as a valid transaction or contains more fields than expected. By default, these warnings are printed in bold red. This behaviour can be overridden by building with the `no_color` feature, by compiling with the `--no-default-features` flag, or by redirecting `stderr` to a file, in which case warnings are printed using the default terminal colour and font family.
 
 **Warning:** No warning is printed if the first line does not represent a valid transaction.
@@ -73,6 +75,8 @@ The crate defines the following structures:
 * `ClientMap`: a `HashMap` with client IDs as keys and `Client`s as values
 * `TransactionID`: a transaction ID (wrapper around a `u32`)
 * `ClientID`: a client ID (wrapper around a `u16`)
+
+The latter two structures are primaruly there to help ensure correctness, avoiding a client ID to be mistaken for a transaction ID or conversely.
 
 The total amount in a client's account is not stored explicitly, but computed as the sum of the available and held amounts when needed.
 
