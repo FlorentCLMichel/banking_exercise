@@ -42,9 +42,9 @@ Alternatively, the command
 
 `cargo run --release -- filename`
 
-builds and run the executable. 
+builds and runs the executable. 
 
-By default, results are printed to `stdout` and warnings to `stderr`. They dan be redirected to files `output_file` and `error_file` by appending `> output_file` and `2> error_file` to the command. For instance, 
+By default, results are printed to `stdout` and warnings to `stderr`. They can be redirected to files `output_file` and `error_file` by appending `> output_file` and `2> error_file` to the command. For instance, 
 
 `./target/release/banking_exercise transactions.csv > client_data.csv`
 
