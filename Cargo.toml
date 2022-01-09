@@ -1,0 +1,12 @@
+[package]
+name = "banking_exercise"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+itertools = "0.10"
+atty = { version = "0.2", optional = true }
+
+[features]
+default = ["atty"]
+no_color = []
