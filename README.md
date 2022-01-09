@@ -47,7 +47,7 @@ will additionally save the errors to `log.txt`.
 
 ## High-level 
 
-The executable goes through the lines of the file passed as parameter, one by one. It tries to parse each line as a valid transaction and, if successful, updates the data accordingly. After the last line has been analysed, the data is printed to `stdout`. 
+The executable goes through the lines of the file passed as parameter, one by one. It tries to parse each line as a valid transaction and, if successful, updates the data accordingly. If the client ID does not exist, a new `Client` instance is created before performing the transaction, with `0.` available and held funds, an unlocked account, and an empty transaction history. After the last line has been analysed, the data is printed to `stdout`. 
 
 Warnings are printed to `stderr` if a row can not be parsed as a valid transaction or contains more fields than expected. By default, these warnings are printed in bold red. This behaviour can be overridden by building with the `no_color` feature, by compiling with the `--no-default-features` flag, or by redirecting `stderr` to a file, in which case warnings are printed using the default terminal colour and font family.
 
@@ -68,8 +68,18 @@ For each client, we show an ID (`u16`), amounts of available, held, and total fu
 
 The crate defines the following structures: 
 
-* `Transaction`: 
-* `Client`: 
-* `ClientMap`: 
-* `TransactionID`:  
-* `ClientID`:  
+* `Transaction`: an `enum` type of the form `Deposit(amount)`, `Withdrawal(amount)`, `Dispute(transaction_id)`, `Resolve(transaction_id)`, or `Chargeback(transaction_id)`
+* `Client`: a structure storing the client's ID, the available and held amounts in their account, a boolean value indicating whether the account is locked, a transaction history (implemented as a hashmap with transaction IDs as keys and transactions as values), and a list of disputed transactions (implemented as a set of transaction IDs)
+* `ClientMap`: a `HashMap` with client IDs as keys and `Client`s as values
+* `TransactionID`: a transaction ID (wrapper around a `u32`)
+* `ClientID`: a client ID (wrapper around a `u16`)
+
+The total amount in a client's account is not stored explicitly, but computed as the sum of the available and held amounts when needed.
+
+Transactions without an explicit ID (`Dispute`, `Resolve`, and `Chargeback`) are assigned the ID `0`. They are not included in the client's trasaction history. 
+
+## Assumptions
+
+* Each client has a unique ID. 
+* Two different `Deposit` or `Withdrawal` transactions for the same client have different transaction IDs.
+* No explicit transaction ID is 0. 
