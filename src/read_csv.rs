@@ -4,6 +4,7 @@ use std::io::{ prelude::*, BufReader };
 use atty::Stream;
 use crate::client::*;
 use crate::transaction::*;
+use crate::style::warning_style;
 
 
 /// Open a csv file and execute all the transactions
@@ -37,7 +38,7 @@ pub fn execute_transactions_from_csv(clients_map: &mut ClientMap, file_name: &st
             }
 
             // execute the transaction
-            clients_map.execute_transaction(transaction_id, client_id, transaction)?;
+            clients_map.execute_transaction(transaction_id, client_id, transaction, stderr_is_term)?;
         } else {
             // print the warning if the line number is not zero
             if n_line > 0 {
@@ -78,27 +79,13 @@ fn parse_line(line: &str, n_line: usize, stderr_is_term: bool)
     };
 
     // print a warning if there is more data on the same line
-    if let Some(_) = fields.next() {
+    if fields.next().is_some() {
         let warning = format!("Additional data on line {}", n_line);
         eprintln!("{}", warning_style(warning, stderr_is_term));
     }
 
     Ok(parsed)
 }
-
-
-#[cfg(feature = "atty")]
-fn warning_style(message: String, is_term: bool) -> String {
-    if is_term {
-        format!("\x1b[31;1m{}\x1b[0m", message)
-    } else {
-        message
-    }
-}
-
-
-#[cfg(any(not(feature = "atty"), feature = "no_color"))]
-fn warning_style(message: String, _: bool) -> String { message }
 
 
 fn parse_dispute(fields: &mut std::str::Split<char>) 
@@ -191,7 +178,7 @@ mod tests {
     #[test]
     fn parse_line_1() {
         let line = "deposit, 1, 2, 10000";
-        let parsed_line = parse_line(line);
+        let parsed_line = parse_line(line, 0, false);
         assert_eq!(Ok((TransactionId(2), ClientId(1), Transaction::Deposit(10000.))), 
                    parsed_line);
     }
@@ -199,7 +186,7 @@ mod tests {
     #[test]
     fn parse_line_2() {
         let line = "withdrawal, 1, 2, 10000";
-        let parsed_line = parse_line(line);
+        let parsed_line = parse_line(line, 0, false);
         assert_eq!(Ok((TransactionId(2), ClientId(1), Transaction::Withdrawal(10000.))), 
                    parsed_line);
     }
@@ -207,7 +194,7 @@ mod tests {
     #[test]
     fn parse_line_3() {
         let line = "dispute, 1, 2";
-        let parsed_line = parse_line(line);
+        let parsed_line = parse_line(line, 0, false);
         assert_eq!(Ok((TransactionId::default(), ClientId(1), Transaction::Dispute(TransactionId(2)))), 
                    parsed_line);
     }
@@ -215,7 +202,7 @@ mod tests {
     #[test]
     fn parse_line_4() {
         let line = "resolve, 1, 2";
-        let parsed_line = parse_line(line);
+        let parsed_line = parse_line(line, 0, false);
         assert_eq!(Ok((TransactionId::default(), ClientId(1), Transaction::Resolve(TransactionId(2)))), 
                    parsed_line);
     }
@@ -223,7 +210,7 @@ mod tests {
     #[test]
     fn parse_line_5() {
         let line = "chargeback, 1, 2";
-        let parsed_line = parse_line(line);
+        let parsed_line = parse_line(line, 0, false);
         assert_eq!(Ok((TransactionId::default(), ClientId(1), Transaction::Chargeback(TransactionId(2)))), 
                    parsed_line);
     }

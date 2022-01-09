@@ -1,4 +1,5 @@
 mod client;
+mod style;
 mod transaction;
 mod read_csv;
 

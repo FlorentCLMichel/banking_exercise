@@ -1,5 +1,6 @@
 use std::collections::{ HashMap, HashSet };
 use crate::transaction::*;
+use crate::style::warning_style;
 use itertools::Itertools; // to sort the client hashmap
 
 /// information about a client
@@ -236,20 +237,24 @@ impl ClientMap {
     /// 
     /// // Execute a transaction: deposit
     /// clients_map.execute_transaction(TransactionId(1), ClientId(1), 
-    ///                                 Transaction::Deposit(10_000.));
+    ///                                 Transaction::Deposit(10_000.),
+    ///                                 false);
     /// 
     /// // Dispute the transaction
     /// clients_map.execute_transaction(TransactionId::default(), ClientId(1), 
-    ///                                 Transaction::Dispute(TransactionId(1)));
+    ///                                 Transaction::Dispute(TransactionId(1)),
+    ///                                 false);
     /// 
     /// // Resolve the transaction
     /// clients_map.execute_transaction(TransactionId::default(), ClientId(1), 
-    ///                                 Transaction::Resolve(TransactionId(1)));
+    ///                                 Transaction::Resolve(TransactionId(1)),
+    ///                                 false);
     /// ```
     pub fn execute_transaction(&mut self, 
                            transaction_id: TransactionId, 
                            client_id: ClientId, 
-                           transaction: Transaction)
+                           transaction: Transaction,
+                           is_term: bool)
         -> Result<(), Box<dyn std::error::Error>> 
     {
         // get a reference to the client, or raise a `[ClientNotFoundError]` if the client does not
@@ -258,6 +263,20 @@ impl ClientMap {
 
             // check that the account is not locked
             if mut_ref_to_client.locked { return Err(Box::new(LockedAccountError {})); }
+
+            // if the transaction is a deposit or Withdrawal, check that its ID is not already in
+            // the client history
+            match &transaction
+            {
+                Transaction::Deposit(_) | Transaction::Withdrawal(_) => 
+                    if mut_ref_to_client.history.contains_key(&transaction_id) {
+                        let warning = format!("Warning: More than one transaction with client ID {} and transaction ID {}; all but the first will be ignored", 
+                                              client_id, transaction_id.0);
+                        eprintln!("{}", warning_style(warning, is_term));
+                        return Ok(());
+                    }
+                _ => ()
+            }
 
             // execute the transaction
             match transaction {
@@ -475,7 +494,8 @@ mod tests {
         
         // Execute a transaction: deposit
         clients_map.execute_transaction(TransactionId(1), ClientId(1), 
-                                        Transaction::Deposit(2_022.)).unwrap();
+                                        Transaction::Deposit(2_022.),
+                                        false).unwrap();
 
         // check the client info
         if let Some(ref_to_client) = clients_map.get(&ClientId(1)) {
@@ -497,11 +517,13 @@ mod tests {
         
         // Execute a transaction: deposit
         clients_map.execute_transaction(TransactionId(1), ClientId(1), 
-                                        Transaction::Deposit(12_022.)).unwrap();
+                                        Transaction::Deposit(12_022.),
+                                        false).unwrap();
         
         // Execute a transaction: withdrawal
-        clients_map.execute_transaction(TransactionId(1), ClientId(1), 
-                                        Transaction::Withdrawal(2_022.)).unwrap();
+        clients_map.execute_transaction(TransactionId(2), ClientId(1), 
+                                        Transaction::Withdrawal(2_022.),
+                                        false).unwrap();
 
         // check the client info
         if let Some(ref_to_client) = clients_map.get(&ClientId(1)) {
@@ -523,11 +545,13 @@ mod tests {
         
         // Execute a transaction: deposit
         clients_map.execute_transaction(TransactionId(1), ClientId(1), 
-                                        Transaction::Deposit(10_000.)).unwrap();
+                                        Transaction::Deposit(10_000.),
+                                        false).unwrap();
         
         // Dispute the transaction
         clients_map.execute_transaction(TransactionId::default(), ClientId(1), 
-                                        Transaction::Dispute(TransactionId(1))).unwrap();
+                                        Transaction::Dispute(TransactionId(1)),
+                                        false).unwrap();
 
         // check the client info
         if let Some(ref_to_client) = clients_map.get(&ClientId(1)) {
@@ -550,11 +574,13 @@ mod tests {
         
         // Execute a transaction: deposit
         clients_map.execute_transaction(TransactionId(1), ClientId(1), 
-                                        Transaction::Deposit(10_000.)).unwrap();
+                                        Transaction::Deposit(10_000.),
+                                        false).unwrap();
         
         // Dispute the transaction
         clients_map.execute_transaction(TransactionId::default(), ClientId(1), 
-                                        Transaction::Dispute(TransactionId(2))).unwrap();
+                                        Transaction::Dispute(TransactionId(2)),
+                                        false).unwrap();
 
         // check the client info
         if let Some(ref_to_client) = clients_map.get(&ClientId(1)) {
@@ -576,15 +602,18 @@ mod tests {
         
         // Execute a transaction: deposit
         clients_map.execute_transaction(TransactionId(1), ClientId(1), 
-                                        Transaction::Deposit(10_000.)).unwrap();
+                                        Transaction::Deposit(10_000.),
+                                        false).unwrap();
         
         // Dispute the transaction
         clients_map.execute_transaction(TransactionId::default(), ClientId(1), 
-                                        Transaction::Dispute(TransactionId(1))).unwrap();
+                                        Transaction::Dispute(TransactionId(1)),
+                                        false).unwrap();
         
         // Resolve the transaction
         clients_map.execute_transaction(TransactionId::default(), ClientId(1), 
-                                        Transaction::Resolve(TransactionId(1))).unwrap();
+                                        Transaction::Resolve(TransactionId(1)),
+                                        false).unwrap();
 
         // check the client info
         if let Some(ref_to_client) = clients_map.get(&ClientId(1)) {
@@ -607,19 +636,23 @@ mod tests {
         
         // Execute a transaction: deposit
         clients_map.execute_transaction(TransactionId(1), ClientId(1), 
-                                        Transaction::Deposit(10_000.)).unwrap();
+                                        Transaction::Deposit(10_000.),
+                                        false).unwrap();
         
         // Execute a transaction: deposit
         clients_map.execute_transaction(TransactionId(2), ClientId(1), 
-                                        Transaction::Deposit(5_000.)).unwrap();
+                                        Transaction::Deposit(5_000.),
+                                        false).unwrap();
         
         // Dispute the first transaction
         clients_map.execute_transaction(TransactionId::default(), ClientId(1), 
-                                        Transaction::Dispute(TransactionId(1))).unwrap();
+                                        Transaction::Dispute(TransactionId(1)),
+                                        false).unwrap();
         
         // Resolve the second transaction
         clients_map.execute_transaction(TransactionId::default(), ClientId(1), 
-                                        Transaction::Resolve(TransactionId(2))).unwrap();
+                                        Transaction::Resolve(TransactionId(2)),
+                                        false).unwrap();
 
         // check the client info
         if let Some(ref_to_client) = clients_map.get(&ClientId(1)) {
@@ -641,15 +674,18 @@ mod tests {
         
         // Execute a transaction: deposit
         clients_map.execute_transaction(TransactionId(1), ClientId(1), 
-                                        Transaction::Deposit(10_000.)).unwrap();
+                                        Transaction::Deposit(10_000.),
+                                        false).unwrap();
         
         // Dispute the transaction
         clients_map.execute_transaction(TransactionId::default(), ClientId(1), 
-                                        Transaction::Dispute(TransactionId(1))).unwrap();
+                                        Transaction::Dispute(TransactionId(1)),
+                                        false).unwrap();
         
         // Chargeback
         clients_map.execute_transaction(TransactionId::default(), ClientId(1), 
-                                        Transaction::Chargeback(TransactionId(1))).unwrap();
+                                        Transaction::Chargeback(TransactionId(1)),
+                                        false).unwrap();
 
         // check the client info
         if let Some(ref_to_client) = clients_map.get(&ClientId(1)) {
@@ -672,19 +708,23 @@ mod tests {
         
         // Execute a transaction: deposit
         clients_map.execute_transaction(TransactionId(1), ClientId(1), 
-                                        Transaction::Deposit(10_000.)).unwrap();
+                                        Transaction::Deposit(10_000.),
+                                        false).unwrap();
         
         // Execute a transaction: deposit
         clients_map.execute_transaction(TransactionId(2), ClientId(1), 
-                                        Transaction::Deposit(5_000.)).unwrap();
+                                        Transaction::Deposit(5_000.),
+                                        false).unwrap();
         
         // Dispute the first transaction
         clients_map.execute_transaction(TransactionId::default(), ClientId(1), 
-                                        Transaction::Dispute(TransactionId(1))).unwrap();
+                                        Transaction::Dispute(TransactionId(1)),
+                                        false).unwrap();
         
         // Resolve the second transaction
         clients_map.execute_transaction(TransactionId::default(), ClientId(1), 
-                                        Transaction::Chargeback(TransactionId(2))).unwrap();
+                                        Transaction::Chargeback(TransactionId(2)),
+                                        false).unwrap();
 
         // check the client info
         if let Some(ref_to_client) = clients_map.get(&ClientId(1)) {
